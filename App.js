@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,100 +11,36 @@ import {
   Dimensions,
   FlatList,
   Image,
-  Platform
+  Platform,
+  ActivityIndicator
 } from 'react-native';
+import axios from 'axios';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const STATUSBAR_HEIGHT = Platform.OS === 'android' ? StatusBar.currentHeight || 28 : 0;
 
-const jogoDados = {
-  torneio: "BRASILEIRÃO SÉRIE A • 20ª RODADA",
-  placar: "ATLÉTICO-MG  1 x 0  GRÊMIO",
-  tempo: "⏱️ 38' 1º Tempo • Arena MRV",
-  notificacaoGol: "⚽ GOL DO GALO! Cassierra (34') - Passe de Scarpa! Galo assume 7º lugar.",
-  times: {
-    mandante: {
-      id: "CAM",
-      nome: "ATLÉTICO-MG",
-      alcunha: "Galo Forte Vingador",
-      escudo: "https://media.api-sports.io/football/teams/1062.png",
-      posicao: "9º Lugar (27 pts)",
-      pontos: "27 pts",
-      saldo: "+3 (24 GP / 21 GC)",
-      forma: ["🟢", "🔴", "🟢", "⚪", "🟢"],
-      formacao: "4-3-3",
-      tecnico: "Gabriel Milito",
-      corTema: "#ffffff",
-      corBorda: "#3f3f46",
-      corCard: "#18181b",
-      titulares: [
-        { id: 1, num: 22, pos: "GOL", name: "Everson", gols: 0, assist: 0, amarelos: 0, ex: "Santos, Ceará" },
-        { id: 2, num: 26, pos: "LAT", name: "Renzo Saravia", gols: 0, assist: 1, amarelos: 1, ex: "Botafogo, Racing" },
-        { id: 3, num: 3, pos: "ZAG", name: "Bruno Fuchs", gols: 0, assist: 0, amarelos: 2, ex: "CSKA Moscou, Internacional" },
-        { id: 4, num: 21, pos: "ZAG", name: "Rodrigo Battaglia", gols: 2, assist: 0, amarelos: 1, ex: "Mallorca, Sporting" },
-        { id: 5, num: 13, pos: "LAT", name: "Guilherme Arana", gols: 2, assist: 4, amarelos: 2, ex: "Sevilla, Corinthians" },
-        { id: 6, num: 23, pos: "VOL", name: "Alan Franco", gols: 0, assist: 2, amarelos: 1, ex: "Talleres, Charlotte FC" },
-        { id: 7, num: 8, pos: "VOL", name: "Otávio", gols: 0, assist: 0, amarelos: 0, ex: "Bordeaux, Athletico" },
-        { id: 8, num: 6, pos: "MEI", name: "Gustavo Scarpa", gols: 5, assist: 6, amarelos: 1, ex: "Nottingham Forest, Palmeiras", temAssist: true },
-        { id: 9, num: 10, pos: "ATA", name: "Paulinho", gols: 7, assist: 3, amarelos: 0, ex: "Bayer Leverkusen, Vasco" },
-        { id: 10, num: 9, pos: "ATA", name: "Mateo Cassierra", gols: 8, assist: 2, amarelos: 0, ex: "Zenit, Racing", fezGol: true, golMinuto: "34'" },
-        { id: 11, num: 7, pos: "ATA", name: "Hulk", gols: 10, assist: 5, amarelos: 1, ex: "Shanghai SIPG, Porto, Zenit" }
-      ],
-      reservas: [
-        { id: 12, num: 31, pos: "GOL", name: "Matheus Mendes", gols: 0, assist: 0, amarelos: 0, ex: "CSA, Base" },
-        { id: 13, num: 16, pos: "ZAG", name: "Igor Rabello", gols: 0, assist: 0, amarelos: 0, ex: "Botafogo, Náutico" },
-        { id: 14, num: 44, pos: "LAT", name: "Rubens", gols: 1, assist: 1, amarelos: 1, ex: "Base" },
-        { id: 15, num: 17, pos: "MEI", name: "Igor Gomes", gols: 2, assist: 1, amarelos: 0, ex: "São Paulo" },
-        { id: 16, num: 11, pos: "ATA", name: "Eduardo Vargas", gols: 3, assist: 1, amarelos: 0, ex: "Tigres, Napoli" },
-        { id: 17, num: 30, pos: "ATA", name: "Brahian Palacios", gols: 1, assist: 0, amarelos: 0, ex: "Atlético Nacional" }
-      ]
-    },
-    visitante: {
-      id: "GRE",
-      nome: "GRÊMIO",
-      alcunha: "Imortal Tricolor",
-      escudo: "https://media.api-sports.io/football/teams/130.png",
-      posicao: "6º Lugar (31 pts)",
-      pontos: "31 pts",
-      saldo: "+5 (26 GP / 21 GC)",
-      forma: ["🟢", "🟢", "⚪", "🔴", "🟢"],
-      formacao: "4-2-3-1",
-      tecnico: "Renato Portaluppi",
-      corTema: "#38bdf8",
-      corBorda: "#0284c7",
-      corCard: "#0c2135",
-      titulares: [
-        { id: 101, num: 1, pos: "GOL", name: "Agustín Marchesín", gols: 0, assist: 0, amarelos: 1, ex: "Celta de Vigo, Porto" },
-        { id: 102, num: 18, pos: "LAT", name: "João Pedro", gols: 1, assist: 2, amarelos: 2, ex: "Porto, Corinthians" },
-        { id: 103, num: 5, pos: "ZAG", name: "Rodrigo Ely", gols: 1, assist: 0, amarelos: 1, ex: "Almería, Milan" },
-        { id: 104, num: 4, pos: "ZAG", name: "Walter Kannemann", gols: 0, assist: 0, amarelos: 2, ex: "San Lorenzo, Atlas" },
-        { id: 105, num: 6, pos: "LAT", name: "Reinaldo", gols: 3, assist: 3, amarelos: 2, ex: "São Paulo, Chapecoense" },
-        { id: 106, num: 20, pos: "VOL", name: "Mathías Villasanti", gols: 1, assist: 2, amarelos: 1, ex: "Cerro Porteño" },
-        { id: 107, num: 17, pos: "VOL", name: "Dodi", gols: 0, assist: 1, amarelos: 2, ex: "Santos, Fluminense" },
-        { id: 108, num: 7, pos: "MEI", name: "Yeferson Soteldo", gols: 4, assist: 4, amarelos: 0, ex: "Santos, Tigres" },
-        { id: 109, num: 10, pos: "MEI", name: "Franco Cristaldo", gols: 6, assist: 5, amarelos: 1, ex: "Huracán, Boca Juniors" },
-        { id: 110, num: 11, pos: "ATA", name: "Cristian Pavón", gols: 3, assist: 3, amarelos: 0, ex: "Atlético-MG, Boca Juniors" },
-        { id: 111, num: 22, pos: "ATA", name: "Martin Braithwaite", gols: 5, assist: 1, amarelos: 1, ex: "Barcelona, Espanyol" }
-      ],
-      reservas: [
-        { id: 112, num: 97, pos: "GOL", name: "Rafael Cabral", gols: 0, assist: 0, amarelos: 0, ex: "Cruzeiro, Santos" },
-        { id: 113, num: 3, pos: "ZAG", name: "Pedro Geromel", gols: 0, assist: 0, amarelos: 0, ex: "Mallorca, Köln" },
-        { id: 114, num: 26, pos: "LAT", name: "Mayk", gols: 0, assist: 0, amarelos: 0, ex: "Guarani" },
-        { id: 115, num: 14, pos: "MEI", name: "Nathan Pescador", gols: 0, assist: 0, amarelos: 0, ex: "Fluminense, Chelsea" },
-        { id: 116, num: 9, pos: "ATA", name: "Diego Costa", gols: 4, assist: 1, amarelos: 1, ex: "Botafogo, Chelsea, Atlético-MG" },
-        { id: 117, num: 77, pos: "ATA", name: "André Henrique", gols: 1, assist: 0, amarelos: 0, ex: "Hercílio Luz" }
-      ]
-    }
-  }
-};
+// CHAVE DA SUA API
+const API_KEY = '5698610421c143d64ca493a63172fe3e';
+const api = axios.create({
+  baseURL: 'https://v3.football.api-sports.io',
+  headers: { 'x-apisports-key': API_KEY }
+});
 
 export default function App() {
-  const [tabAtiva, setTabAtiva] = useState(0);
-  const [titularesCAM, setTitularesCAM] = useState(jogoDados.times.mandante.titulares);
-  const [reservasCAM, setReservasCAM] = useState(jogoDados.times.mandante.reservas);
-  const [titularesGRE, setTitularesGRE] = useState(jogoDados.times.visitante.titulares);
-  const [reservasGRE, setReservasGRE] = useState(jogoDados.times.visitante.reservas);
+  const [loading, setLoading] = useState(false);
+  const [jogos, setJogos] = useState([]);
+  const [partidaSelecionada, setPartidaSelecionada] = useState(null);
 
+  // Estados da partida em exibição
+  const [mandante, setMandante] = useState(null);
+  const [visitante, setVisitante] = useState(null);
+  const [titularesHome, setTitularesHome] = useState([]);
+  const [reservasHome, setReservasHome] = useState([]);
+  const [titularesAway, setTitularesAway] = useState([]);
+  const [reservasAway, setReservasAway] = useState([]);
+
+  // Navegação e Interações
+  const [tabAtiva, setTabAtiva] = useState(0);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [substituindo, setSubstituindo] = useState(null);
@@ -112,20 +48,126 @@ export default function App() {
 
   const flatListRef = useRef(null);
 
+  useEffect(() => {
+    carregarJogosMLS();
+  }, []);
+
+  // 1. Carrega as partidas de hoje (com foco nos jogos da MLS)
+  async function carregarJogosMLS() {
+    setLoading(true);
+    try {
+      const hoje = new Date().toISOString().split('T')[0];
+      // Busca partidas da MLS (league 253) para hoje
+      let res = await api.get('/fixtures', { params: { date: hoje, league: 253 } });
+      
+      // Se por fuso horário não encontrar pela liga travada, busca as partidas gerais de hoje
+      if (!res.data.response || res.data.response.length === 0) {
+        res = await api.get('/fixtures', { params: { date: hoje } });
+      }
+
+      setJogos(res.data.response || []);
+    } catch (e) {
+      console.error('Erro ao carregar jogos:', e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 2. Ao tocar no jogo, busca a escalação oficial em tempo real
+  async function abrirJogo(fixtureItem) {
+    setLoading(true);
+    setPartidaSelecionada(fixtureItem);
+    try {
+      const res = await api.get('/fixtures/lineups', {
+        params: { fixture: fixtureItem.fixture.id }
+      });
+      const lineups = res.data.response;
+
+      if (lineups && lineups.length >= 2) {
+        const homeData = lineups[0];
+        const awayData = lineups[1];
+
+        setMandante({
+          id: homeData.team.id,
+          nome: homeData.team.name.toUpperCase(),
+          escudo: homeData.team.logo,
+          formacao: homeData.formation || '4-3-3',
+          tecnico: homeData.coach?.name || 'Comissão Técnica',
+          corTema: '#38bdf8',
+          corBorda: '#0284c7',
+          corCard: '#0f172a'
+        });
+
+        setVisitante({
+          id: awayData.team.id,
+          nome: awayData.team.name.toUpperCase(),
+          escudo: awayData.team.logo,
+          formacao: awayData.formation || '4-4-2',
+          tecnico: awayData.coach?.name || 'Comissão Técnica',
+          corTema: '#facc15',
+          corBorda: '#ca8a04',
+          corCard: '#1c1917'
+        });
+
+        // Mapeia titulares da casa
+        setTitularesHome(homeData.startXI.map(i => ({
+          id: i.player.id,
+          num: i.player.number,
+          pos: i.player.pos,
+          name: i.player.name,
+          time: homeData.team.name
+        })));
+        setReservasHome(homeData.substitutes.map(i => ({
+          id: i.player.id,
+          num: i.player.number,
+          pos: i.player.pos,
+          name: i.player.name,
+          time: homeData.team.name
+        })));
+
+        // Mapeia titulares do visitante
+        setTitularesAway(awayData.startXI.map(i => ({
+          id: i.player.id,
+          num: i.player.number,
+          pos: i.player.pos,
+          name: i.player.name,
+          time: awayData.team.name
+        })));
+        setReservasAway(awayData.substitutes.map(i => ({
+          id: i.player.id,
+          num: i.player.number,
+          pos: i.player.pos,
+          name: i.player.name,
+          time: awayData.team.name
+        })));
+
+        setTabAtiva(0);
+      } else {
+        alert('A súmula oficial desta partida ainda está sendo processada pela federação. Tente em alguns instantes.');
+        setPartidaSelecionada(null);
+      }
+    } catch (e) {
+      console.error('Erro ao buscar escalações:', e);
+      setPartidaSelecionada(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function mudarTab(index) {
     setTabAtiva(index);
     flatListRef.current?.scrollToIndex({ index, animated: true });
   }
 
-  function handleSelectPlayer(player, isTitular, timeId) {
+  function handleSelectPlayer(player, isTitular, isHome) {
     if (substituindo) {
       if (!isTitular) {
-        if (timeId === 'CAM') {
-          setTitularesCAM(titularesCAM.map(t => t.id === substituindo.id ? player : t));
-          setReservasCAM(reservasCAM.map(r => r.id === player.id ? substituindo : r));
+        if (isHome) {
+          setTitularesHome(titularesHome.map(t => t.id === substituindo.id ? player : t));
+          setReservasHome(reservasHome.map(r => r.id === player.id ? substituindo : r));
         } else {
-          setTitularesGRE(titularesGRE.map(t => t.id === substituindo.id ? player : t));
-          setReservasGRE(reservasGRE.map(r => r.id === player.id ? substituindo : r));
+          setTitularesAway(titularesAway.map(t => t.id === substituindo.id ? player : t));
+          setReservasAway(reservasAway.map(r => r.id === player.id ? substituindo : r));
         }
         setSubstituindo(null);
         setGavetaAberta(false);
@@ -134,16 +176,82 @@ export default function App() {
       }
       return;
     }
-    setSelectedPlayer({ ...player, timeId });
+    setSelectedPlayer(player);
   }
 
-  const timeAtual = tabAtiva === 0 ? jogoDados.times.mandante : jogoDados.times.visitante;
-  const reservasAtuais = tabAtiva === 0 ? reservasCAM : reservasGRE;
+  // ==========================================
+  // TELA 1: SELETOR DE JOGOS DA RODADA
+  // ==========================================
+  if (!partidaSelecionada || !mandante) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor="#090d16" translucent />
+        
+        <View style={styles.headerPrincipal}>
+          <Text style={styles.torneioText}>🎙️ BANCADA DE TRANSMISSÃO</Text>
+          <Text style={styles.placarText}>SELECIONE A PARTIDA</Text>
+          <Text style={styles.tempoText}>Partidas com dados ao vivo e escalações oficiais</Text>
+        </View>
 
-  const renderPranchetaTime = (time, titulares) => {
+        {loading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color="#38bdf8" />
+            <Text style={{ color: '#94a3b8', marginTop: 12 }}>Consultando jogos da rodada...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={jogos}
+            keyExtractor={item => item.fixture.id.toString()}
+            contentContainerStyle={{ padding: 12 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.cardPartidaItem} onPress={() => abrirJogo(item)}>
+                <View style={styles.cardPartidaHeader}>
+                  <Text style={styles.cardPartidaLiga}>{item.league.name.toUpperCase()}</Text>
+                  <Text style={styles.cardPartidaStatus}>
+                    {item.fixture.status.short === 'NS' ? 'Não Iniciado' : item.fixture.status.long}
+                  </Text>
+                </View>
+
+                <View style={styles.cardPartidaConfronto}>
+                  <View style={styles.timeLinha}>
+                    <Image source={{ uri: item.teams.home.logo }} style={styles.logoPartidaMini} />
+                    <Text style={styles.nomeTimePartida} numberOfLines={1}>{item.teams.home.name}</Text>
+                  </View>
+                  <Text style={styles.placarPartidaTexto}>
+                    {item.goals.home ?? 0} x {item.goals.away ?? 0}
+                  </Text>
+                  <View style={[styles.timeLinha, { justifyContent: 'flex-end' }]}>
+                    <Text style={[styles.nomeTimePartida, { textAlign: 'right' }]} numberOfLines={1}>{item.teams.away.name}</Text>
+                    <Image source={{ uri: item.teams.away.logo }} style={[styles.logoPartidaMini, { marginLeft: 8, marginRight: 0 }]} />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <View style={styles.centerContainer}>
+                <Text style={{ color: '#94a3b8' }}>Nenhuma partida encontrada para hoje.</Text>
+                <TouchableOpacity style={styles.btnRecarregar} onPress={carregarJogosMLS}>
+                  <Text style={{ color: '#000', fontWeight: 'bold' }}>Recarregar</Text>
+                </TouchableOpacity>
+              </View>
+            }
+          />
+        )}
+      </SafeAreaView>
+    );
+  }
+
+  // ==========================================
+  // TELA 2: MESA DO NARRADOR COM SWIPE E GAVETA
+  // ==========================================
+  const timeAtual = tabAtiva === 0 ? mandante : visitante;
+  const titularesAtuais = tabAtiva === 0 ? titularesHome : titularesAway;
+  const reservasAtuais = tabAtiva === 0 ? reservasHome : reservasAway;
+
+  const renderPranchetaTime = (time, titulares, isHome) => {
     return (
       <View style={[styles.pageContainer, { width: SCREEN_WIDTH }]}>
-        {/* Card do Clube com Escudo Oficial */}
+        {/* Card do Clube com Escudo Real */}
         <TouchableOpacity 
           style={[styles.teamCardHeader, { borderColor: time.corBorda }]}
           onPress={() => setSelectedTeam(time)}
@@ -154,52 +262,39 @@ export default function App() {
             <Text style={[styles.teamNameTitle, { color: time.corTema }]}>
               {time.nome} <Text style={styles.schemaText}>({time.formacao})</Text>
             </Text>
-            <Text style={styles.coachText}>Técnico: {time.tecnico} • Toque p/ ficha técnica</Text>
-          </View>
-          <View style={styles.badgeClassificacao}>
-            <Text style={styles.badgeClassificacaoTexto}>{time.posicao.split(' ')[0]}</Text>
+            <Text style={styles.coachText}>Técnico: {time.tecnico} • Toque p/ estatísticas</Text>
           </View>
         </TouchableOpacity>
 
-        {/* 11 Titulares em Linha Vertical (Um abaixo do outro) */}
+        {/* 11 Titulares em Linha Vertical */}
         <ScrollView style={styles.listaTitularesScroll} showsVerticalScrollIndicator={false}>
           <Text style={styles.listaAviso}>
             TITULARES EM CAMPO (Toque: Ficha | Segure: Substituir)
           </Text>
-          {titulares.map((p) => {
-            const isPendurado = p.amarelos === 2;
-            return (
-              <TouchableOpacity
-                key={p.id}
-                style={[
-                  styles.linhaJogador,
-                  { backgroundColor: time.corCard, borderColor: time.corBorda },
-                  substituindo?.id === p.id && styles.linhaJogadorSubstituindo,
-                  isPendurado && styles.linhaJogadorPendurado
-                ]}
-                onPress={() => handleSelectPlayer(p, true, time.id)}
-                onLongPress={() => {
-                  setSubstituindo(p);
-                  setGavetaAberta(true); // Abre a gaveta de reservas na hora ao segurar
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={styles.linhaEsquerda}>
-                  <View style={[styles.badgeNumero, { borderColor: time.corTema }]}>
-                    <Text style={[styles.numeroTexto, { color: time.corTema }]}>#{p.num}</Text>
-                  </View>
-                  <Text style={styles.posicaoTexto}>{p.pos}</Text>
-                  <Text style={styles.nomeTexto} numberOfLines={1}>{p.name}</Text>
+          {titulares.map((p) => (
+            <TouchableOpacity
+              key={p.id}
+              style={[
+                styles.linhaJogador,
+                { backgroundColor: time.corCard, borderColor: time.corBorda },
+                substituindo?.id === p.id && styles.linhaJogadorSubstituindo
+              ]}
+              onPress={() => handleSelectPlayer(p, true, isHome)}
+              onLongPress={() => {
+                setSubstituindo(p);
+                setGavetaAberta(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.linhaEsquerda}>
+                <View style={[styles.badgeNumero, { borderColor: time.corTema }]}>
+                  <Text style={[styles.numeroTexto, { color: time.corTema }]}>#{p.num}</Text>
                 </View>
-
-                <View style={styles.linhaDireita}>
-                  {p.fezGol && <Text style={styles.badgeGol}>⚽ {p.golMinuto}</Text>}
-                  {p.temAssist && <Text style={styles.badgeAssist}>👟 Passe</Text>}
-                  {isPendurado && <Text style={styles.badgePendurado}>⚠️ Pendurado</Text>}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+                <Text style={styles.posicaoTexto}>{p.pos || 'JOG'}</Text>
+                <Text style={styles.nomeTexto} numberOfLines={1}>{p.name}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
           <View style={{ height: 90 }} />
         </ScrollView>
       </View>
@@ -209,30 +304,33 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#090d16" translucent />
-      
-      {/* 1. Header Responsivo (Não corta no notch) */}
+
+      {/* Header com Botão de Voltar */}
       <View style={styles.headerPrincipal}>
-        <Text style={styles.torneioText}>{jogoDados.torneio}</Text>
-        <Text style={styles.placarText}>{jogoDados.placar}</Text>
-        <Text style={styles.tempoText}>{jogoDados.tempo}</Text>
+        <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => setPartidaSelecionada(null)} style={styles.btnVoltarTopo}>
+            <Text style={styles.btnVoltarTexto}>‹ Jogos</Text>
+          </TouchableOpacity>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={styles.torneioText}>{partidaSelecionada.league.name.toUpperCase()}</Text>
+            <Text style={styles.placarText}>
+              {partidaSelecionada.teams.home.name} {partidaSelecionada.goals.home ?? 0} x {partidaSelecionada.goals.away ?? 0} {partidaSelecionada.teams.away.name}
+            </Text>
+            <Text style={styles.tempoText}>⏱️ {partidaSelecionada.fixture.status.long}</Text>
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
       </View>
 
-      {/* 2. Banner de Alerta Dinâmico */}
-      <View style={styles.bannerAlerta}>
-        <Text style={styles.bannerAlertaTexto} numberOfLines={1}>
-          {jogoDados.notificacaoGol}
-        </Text>
-      </View>
-
-      {/* 3. Seletor de Tabs com Escudos */}
+      {/* Tabs com os Escudos */}
       <View style={styles.tabSelector}>
         <TouchableOpacity
           style={[styles.tabButton, tabAtiva === 0 && styles.tabButtonAtivoCAM]}
           onPress={() => mudarTab(0)}
         >
-          <Image source={{ uri: jogoDados.times.mandante.escudo }} style={styles.tabMiniLogo} />
+          <Image source={{ uri: mandante.escudo }} style={styles.tabMiniLogo} />
           <Text style={[styles.tabButtonTexto, tabAtiva === 0 && styles.tabTextoAtivo]}>
-            ATLÉTICO-MG
+            {mandante.nome}
           </Text>
         </TouchableOpacity>
 
@@ -240,9 +338,9 @@ export default function App() {
           style={[styles.tabButton, tabAtiva === 1 && styles.tabButtonAtivoGRE]}
           onPress={() => mudarTab(1)}
         >
-          <Image source={{ uri: jogoDados.times.visitante.escudo }} style={styles.tabMiniLogo} />
+          <Image source={{ uri: visitante.escudo }} style={styles.tabMiniLogo} />
           <Text style={[styles.tabButtonTexto, tabAtiva === 1 && styles.tabTextoAtivo]}>
-            GRÊMIO
+            {visitante.nome}
           </Text>
         </TouchableOpacity>
       </View>
@@ -255,26 +353,26 @@ export default function App() {
         </View>
       )}
 
-      {/* 4. Telas Deslizantes (Swipe) */}
+      {/* Swipeable List */}
       <FlatList
         ref={flatListRef}
-        data={[jogoDados.times.mandante, jogoDados.times.visitante]}
+        data={[mandante, visitante]}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id.toString()}
         onMomentumScrollEnd={(e) => {
           const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
           setTabAtiva(index);
         }}
         renderItem={({ item, index }) =>
           index === 0
-            ? renderPranchetaTime(item, titularesCAM)
-            : renderPranchetaTime(item, titularesGRE)
+            ? renderPranchetaTime(item, titularesHome, true)
+            : renderPranchetaTime(item, titularesAway, false)
         }
       />
 
-      {/* 5. GAVETA PUXÁVEL DE RESERVAS (Bottom Bar / Drawer) */}
+      {/* Gaveta de Reservas Puxável */}
       <TouchableOpacity 
         style={styles.gavetaBarraPuxador}
         onPress={() => setGavetaAberta(true)}
@@ -283,13 +381,13 @@ export default function App() {
         <View style={styles.gavetaPuxadorHandle} />
         <View style={styles.gavetaBarraConteudo}>
           <Text style={styles.gavetaBarraTitulo}>
-            💺 BANCO DE RESERVAS ({timeAtual.nome}) • {reservasAtuais.length} jogadores
+            💺 RESERVAS ({timeAtual.nome}) • {reservasAtuais.length} suplentes
           </Text>
-          <Text style={styles.gavetaPuxarAviso}>Puxar / Toque para abrir ▲</Text>
+          <Text style={styles.gavetaPuxarAviso}>Abrir Banco ▲</Text>
         </View>
       </TouchableOpacity>
 
-      {/* MODAL GAVETA COMPLETA DE RESERVAS EM LINHA */}
+      {/* Modal da Gaveta Aberta */}
       <Modal visible={gavetaAberta} animationType="slide" transparent>
         <View style={styles.gavetaModalOverlay}>
           <View style={styles.gavetaModalContent}>
@@ -302,7 +400,7 @@ export default function App() {
                 </Text>
               </View>
               <Text style={styles.gavetaSubAviso}>
-                {substituindo ? `Toque em quem vai entrar no lugar de ${substituindo.name}` : 'Toque no reserva para ver a ficha completa'}
+                {substituindo ? `Toque em quem entra no lugar de ${substituindo.name}` : 'Toque no reserva para ver detalhes'}
               </Text>
             </View>
 
@@ -315,16 +413,16 @@ export default function App() {
                     { backgroundColor: timeAtual.corCard, borderColor: timeAtual.corBorda },
                     substituindo && styles.linhaJogadorProntoParaEntrar
                   ]}
-                  onPress={() => handleSelectPlayer(p, false, timeAtual.id)}
+                  onPress={() => handleSelectPlayer(p, false, tabAtiva === 0)}
                 >
                   <View style={styles.linhaEsquerda}>
                     <View style={[styles.badgeNumero, { borderColor: timeAtual.corTema }]}>
                       <Text style={[styles.numeroTexto, { color: timeAtual.corTema }]}>#{p.num}</Text>
                     </View>
-                    <Text style={styles.posicaoTexto}>{p.pos}</Text>
+                    <Text style={styles.posicaoTexto}>{p.pos || 'JOG'}</Text>
                     <Text style={styles.nomeTexto}>{p.name}</Text>
                   </View>
-                  <Text style={styles.badgeEntrar}>{substituindo ? 'Substituir ↵' : 'Ver Ficha ›'}</Text>
+                  <Text style={styles.badgeEntrar}>{substituindo ? 'Entrar ↵' : 'Ver Ficha ›'}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -342,7 +440,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL 1: FICHA DO ATLETA */}
+      {/* Modal Ficha do Jogador */}
       <Modal visible={!!selectedPlayer} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCardBox}>
@@ -352,24 +450,13 @@ export default function App() {
                   #{selectedPlayer.num} {selectedPlayer.name.toUpperCase()}
                 </Text>
                 <Text style={styles.modalJogadorTime}>
-                  Posição: {selectedPlayer.pos} • {selectedPlayer.timeId === 'CAM' ? 'Atlético-MG' : 'Grêmio'}
+                  Posição: {selectedPlayer.pos} • {selectedPlayer.time}
                 </Text>
 
                 <View style={styles.modalDivisor} />
 
                 <Text style={styles.modalLinhaInfo}>
-                  ⚽ Gols no Brasileirão: <Text style={styles.modalDestaque}>{selectedPlayer.gols} gols</Text>
-                </Text>
-                <Text style={styles.modalLinhaInfo}>
-                  🎯 Assistências: <Text style={styles.modalDestaque}>{selectedPlayer.assist}</Text>
-                </Text>
-                <Text style={styles.modalLinhaInfo}>
-                  🟨 Cartões Amarelos: <Text style={styles.modalDestaque}>
-                    {selectedPlayer.amarelos} {selectedPlayer.amarelos === 2 ? '(⚠️ PENDURADO)' : ''}
-                  </Text>
-                </Text>
-                <Text style={styles.modalLinhaInfo}>
-                  🔄 Clubes anteriores: <Text style={styles.modalDestaque}>Ex-{selectedPlayer.ex}</Text>
+                  📋 Status: <Text style={styles.modalDestaque}>Registrado na súmula oficial da partida</Text>
                 </Text>
 
                 <TouchableOpacity
@@ -383,57 +470,13 @@ export default function App() {
           </View>
         </View>
       </Modal>
-
-      {/* MODAL 2: ESTATÍSTICAS E TABELA DO CLUBE */}
-      <Modal visible={!!selectedTeam} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCardBox, { borderColor: selectedTeam?.corTema }]}>
-            {selectedTeam && (
-              <>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                  <Image source={{ uri: selectedTeam.escudo }} style={{ width: 36, height: 36, marginRight: 10 }} />
-                  <View>
-                    <Text style={[styles.modalJogadorNome, { color: selectedTeam.corTema }]}>
-                      {selectedTeam.nome}
-                    </Text>
-                    <Text style={styles.modalJogadorTime}>{selectedTeam.alcunha}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.modalDivisor} />
-
-                <Text style={styles.modalLinhaInfo}>
-                  📊 Classificação Atual: <Text style={styles.modalDestaque}>{selectedTeam.posicao}</Text>
-                </Text>
-                <Text style={styles.modalLinhaInfo}>
-                  🏆 Pontuação Total: <Text style={styles.modalDestaque}>{selectedTeam.pontos}</Text>
-                </Text>
-                <Text style={styles.modalLinhaInfo}>
-                  ⚖️ Saldo de Gols: <Text style={styles.modalDestaque}>{selectedTeam.saldo}</Text>
-                </Text>
-                <Text style={styles.modalLinhaInfo}>
-                  📈 Forma Recente: <Text style={styles.modalDestaque}>{selectedTeam.forma.join(' ')}</Text>
-                </Text>
-
-                <TouchableOpacity
-                  style={[styles.modalBotaoFechar, { backgroundColor: selectedTeam.corTema }]}
-                  onPress={() => setSelectedTeam(null)}
-                >
-                  <Text style={[styles.modalBotaoTexto, { color: '#000000' }]}>Fechar Ficha do Clube</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#090d16', paddingTop: STATUSBAR_HEIGHT },
-  
-  // Header Responsivo
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   headerPrincipal: {
     paddingVertical: 10,
     paddingHorizontal: 15,
@@ -442,31 +485,44 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#1f2937'
   },
-  torneioText: { color: '#9ca3af', fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
-  placarText: { color: '#ffffff', fontSize: 18, fontWeight: '900', marginVertical: 2 },
-  tempoText: { color: '#38bdf8', fontSize: 12, fontWeight: '600' },
+  btnVoltarTopo: { padding: 4 },
+  btnVoltarTexto: { color: '#38bdf8', fontSize: 13, fontWeight: 'bold' },
+  torneioText: { color: '#9ca3af', fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
+  placarText: { color: '#ffffff', fontSize: 16, fontWeight: '900', marginVertical: 2, textAlign: 'center' },
+  tempoText: { color: '#38bdf8', fontSize: 11, fontWeight: '600' },
 
-  bannerAlerta: { backgroundColor: '#854d0e', paddingVertical: 6, paddingHorizontal: 12, alignItems: 'center' },
-  bannerAlertaTexto: { color: '#fef08a', fontSize: 11, fontWeight: 'bold' },
-
-  // Abas de Seleção
-  tabSelector: {
-    flexDirection: 'row',
+  // Lista de Seleção
+  cardPartidaItem: {
     backgroundColor: '#111827',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1f2937'
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#1f2937'
   },
+  cardPartidaHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  cardPartidaLiga: { color: '#38bdf8', fontSize: 10, fontWeight: 'bold' },
+  cardPartidaStatus: { color: '#9ca3af', fontSize: 10 },
+  cardPartidaConfronto: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  timeLinha: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  logoPartidaMini: { width: 22, height: 22, marginRight: 8 },
+  nomeTimePartida: { color: '#ffffff', fontSize: 13, fontWeight: 'bold', flex: 1 },
+  placarPartidaTexto: { color: '#f59e0b', fontSize: 16, fontWeight: 'bold', paddingHorizontal: 12 },
+  btnRecarregar: { backgroundColor: '#38bdf8', padding: 10, borderRadius: 6, marginTop: 12 },
+
+  // Abas
+  tabSelector: { flexDirection: 'row', backgroundColor: '#111827', borderBottomWidth: 1, borderBottomColor: '#1f2937' },
   tabButton: { flex: 1, flexDirection: 'row', paddingVertical: 10, justifyContent: 'center', alignItems: 'center' },
   tabMiniLogo: { width: 18, height: 18, marginRight: 8 },
-  tabButtonAtivoCAM: { borderBottomWidth: 3, borderBottomColor: '#ffffff' },
-  tabButtonAtivoGRE: { borderBottomWidth: 3, borderBottomColor: '#38bdf8' },
-  tabButtonTexto: { color: '#6b7280', fontSize: 13, fontWeight: 'bold' },
+  tabButtonAtivoCAM: { borderBottomWidth: 3, borderBottomColor: '#38bdf8' },
+  tabButtonAtivoGRE: { borderBottomWidth: 3, borderBottomColor: '#facc15' },
+  tabButtonTexto: { color: '#6b7280', fontSize: 12, fontWeight: 'bold' },
   tabTextoAtivo: { color: '#ffffff' },
 
   alertaSubstituicao: { backgroundColor: '#f59e0b', padding: 8, alignItems: 'center' },
   alertaSubstituicaoTexto: { color: '#000', fontWeight: 'bold', fontSize: 11 },
 
-  // Conteúdo de Cada Time
+  // Página do Time
   pageContainer: { flex: 1, paddingHorizontal: 12, paddingTop: 8 },
   teamCardHeader: {
     flexDirection: 'row',
@@ -482,10 +538,7 @@ const styles = StyleSheet.create({
   teamNameTitle: { fontSize: 14, fontWeight: 'bold' },
   schemaText: { color: '#9ca3af', fontSize: 11, fontWeight: 'normal' },
   coachText: { color: '#6b7280', fontSize: 10, marginTop: 2 },
-  badgeClassificacao: { backgroundColor: '#1f2937', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  badgeClassificacaoTexto: { color: '#f3f4f6', fontSize: 11, fontWeight: 'bold' },
 
-  // 11 Titulares em Linha
   listaTitularesScroll: { flex: 1 },
   listaAviso: { color: '#64748b', fontSize: 10, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
   linhaJogador: {
@@ -499,28 +552,15 @@ const styles = StyleSheet.create({
     marginBottom: 6
   },
   linhaJogadorSubstituindo: { borderColor: '#f59e0b', backgroundColor: '#451a03' },
-  linhaJogadorPendurado: { borderColor: '#eab308' },
   linhaJogadorProntoParaEntrar: { borderColor: '#10b981', backgroundColor: '#064e3b' },
   linhaEsquerda: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  badgeNumero: {
-    width: 32,
-    height: 24,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8
-  },
+  badgeNumero: { width: 32, height: 24, borderRadius: 4, borderWidth: 1, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
   numeroTexto: { fontSize: 11, fontWeight: 'bold' },
-  posicaoTexto: { color: '#94a3b8', fontSize: 10, fontWeight: 'bold', width: 30 },
+  posicaoTexto: { color: '#94a3b8', fontSize: 10, fontWeight: 'bold', width: 32 },
   nomeTexto: { color: '#ffffff', fontSize: 13, fontWeight: 'bold', flex: 1 },
-  linhaDireita: { flexDirection: 'row', alignItems: 'center' },
-  badgeGol: { color: '#facc15', fontSize: 11, fontWeight: 'bold', marginRight: 6 },
-  badgeAssist: { color: '#38bdf8', fontSize: 11, fontWeight: 'bold', marginRight: 6 },
-  badgePendurado: { color: '#eab308', fontSize: 9, fontWeight: 'bold' },
   badgeEntrar: { color: '#38bdf8', fontSize: 11, fontWeight: 'bold' },
 
-  // Gaveta Puxável (Bottom Sheet)
+  // Gaveta
   gavetaBarraPuxador: {
     position: 'absolute',
     bottom: 0,
@@ -538,7 +578,6 @@ const styles = StyleSheet.create({
   gavetaBarraTitulo: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' },
   gavetaPuxarAviso: { color: '#38bdf8', fontSize: 11, fontWeight: 'bold' },
 
-  // Modal da Gaveta Aberta
   gavetaModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   gavetaModalContent: {
     backgroundColor: '#0c1322',
@@ -549,19 +588,12 @@ const styles = StyleSheet.create({
   },
   gavetaModalHeader: { alignItems: 'center', marginBottom: 12 },
   gavetaHeaderInfo: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  gavetaHeaderTitulo: { color: '#ffffff', fontSize: 14, fontWeight: 'bold' },
+  gavetaHeaderTitulo: { color: '#ffffff', fontSize: 13, fontWeight: 'bold' },
   gavetaSubAviso: { color: '#94a3b8', fontSize: 11, marginTop: 4 },
   gavetaListaScroll: { maxHeight: SCREEN_HEIGHT * 0.52 },
-  gavetaBotaoFechar: {
-    backgroundColor: '#1f2937',
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 10,
-    alignItems: 'center'
-  },
+  gavetaBotaoFechar: { backgroundColor: '#1f2937', paddingVertical: 12, borderRadius: 8, marginTop: 10, alignItems: 'center' },
   gavetaBotaoFecharTexto: { color: '#ffffff', fontWeight: 'bold', fontSize: 13 },
 
-  // Modais Ficha
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' },
   modalCardBox: { width: '85%', backgroundColor: '#111827', borderRadius: 14, padding: 20, borderWidth: 1.5, borderColor: '#38bdf8' },
   modalJogadorNome: { color: '#ffffff', fontSize: 17, fontWeight: 'bold' },
